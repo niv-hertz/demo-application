@@ -310,3 +310,61 @@ def test_create_todo_superuser_not_limited(
         json=data,
     )
     assert response.status_code == 200
+
+
+def test_create_todo_completed_todos_not_counted(
+    client: TestClient, db: Session
+) -> None:
+    """Test that completed todos do not count toward the MAX_TODOS_PER_USER limit.
+
+    This is a regression test for the bug where completed todos were counting
+    toward the limit, preventing users from creating new todos after completing
+    previous ones.
+    """
+    from app.models import UserCreate
+
+    password = random_lower_string()
+    email = f"{random_lower_string()}@example.com"
+    user = crud.create_user(
+        session=db, user_create=UserCreate(email=email, password=password)
+    )
+    headers = user_authentication_headers(
+        client=client, email=email, password=password
+    )
+
+    # Create MAX_TODOS_PER_USER todos
+    todo_ids = []
+    for i in range(MAX_TODOS_PER_USER):
+        response = client.post(
+            f"{settings.API_V1_STR}/todos/",
+            headers=headers,
+            json={"title": f"Todo {i}"},
+        )
+        assert response.status_code == 200
+        todo_ids.append(response.json()["id"])
+
+    # Verify we can't create another active todo
+    response = client.post(
+        f"{settings.API_V1_STR}/todos/",
+        headers=headers,
+        json={"title": "One too many"},
+    )
+    assert response.status_code == 400
+    assert "Maximum number of todos" in response.json()["detail"]
+
+    # Complete the first todo
+    response = client.patch(
+        f"{settings.API_V1_STR}/todos/{todo_ids[0]}/complete",
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["is_completed"] is True
+
+    # Now we should be able to create a new todo since completed todos don't count
+    response = client.post(
+        f"{settings.API_V1_STR}/todos/",
+        headers=headers,
+        json={"title": "New todo after completion"},
+    )
+    assert response.status_code == 200
+    assert response.json()["title"] == "New todo after completion"
