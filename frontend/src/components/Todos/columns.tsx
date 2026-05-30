@@ -41,7 +41,10 @@ export const columns: ColumnDef<TodoPublic>[] = [
         <TooltipTrigger asChild>
           <span
             className={cn(
-              "font-medium whitespace-nowrap",
+              // Use max-w-xs truncate block instead of whitespace-nowrap to prevent
+              // long titles from causing horizontal table scrolling (issue #25).
+              // The Tooltip provides access to the full title on hover.
+              "font-medium max-w-xs truncate block",
               row.original.is_completed && "line-through text-muted-foreground",
             )}
           >
