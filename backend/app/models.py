@@ -53,7 +53,7 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
-    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    todos: list["Todo"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 # Properties to return via API, id is always required
@@ -68,23 +68,25 @@ class UsersPublic(SQLModel):
 
 
 # Shared properties
-class ItemBase(SQLModel):
+class TodoBase(SQLModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
+    is_completed: bool = Field(default=False)
 
 
-# Properties to receive on item creation
-class ItemCreate(ItemBase):
+# Properties to receive on todo creation
+class TodoCreate(TodoBase):
     pass
 
 
-# Properties to receive on item update
-class ItemUpdate(ItemBase):
+# Properties to receive on todo update
+class TodoUpdate(TodoBase):
     title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore[assignment]
+    is_completed: bool | None = None  # type: ignore[assignment]
 
 
 # Database model, database table inferred from class name
-class Item(ItemBase, table=True):
+class Todo(TodoBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -93,18 +95,18 @@ class Item(ItemBase, table=True):
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
-    owner: User | None = Relationship(back_populates="items")
+    owner: User | None = Relationship(back_populates="todos")
 
 
 # Properties to return via API, id is always required
-class ItemPublic(ItemBase):
+class TodoPublic(TodoBase):
     id: uuid.UUID
     owner_id: uuid.UUID
     created_at: datetime | None = None
 
 
-class ItemsPublic(SQLModel):
-    data: list[ItemPublic]
+class TodosPublic(SQLModel):
+    data: list[TodoPublic]
     count: int
 
 

@@ -71,7 +71,7 @@ export const HTTPValidationErrorSchema = {
     title: 'HTTPValidationError'
 } as const;
 
-export const ItemCreateSchema = {
+export const TodoCreateSchema = {
     properties: {
         title: {
             type: 'string',
@@ -90,14 +90,19 @@ export const ItemCreateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        is_completed: {
+            type: 'boolean',
+            title: 'Is Completed',
+            default: false
         }
     },
     type: 'object',
     required: ['title'],
-    title: 'ItemCreate'
+    title: 'TodoCreate'
 } as const;
 
-export const ItemPublicSchema = {
+export const TodoPublicSchema = {
     properties: {
         title: {
             type: 'string',
@@ -116,6 +121,11 @@ export const ItemPublicSchema = {
                 }
             ],
             title: 'Description'
+        },
+        is_completed: {
+            type: 'boolean',
+            title: 'Is Completed',
+            default: false
         },
         id: {
             type: 'string',
@@ -141,11 +151,11 @@ export const ItemPublicSchema = {
         }
     },
     type: 'object',
-    required: ['title', 'id', 'owner_id'],
-    title: 'ItemPublic'
+    required: ['title', 'is_completed', 'id', 'owner_id'],
+    title: 'TodoPublic'
 } as const;
 
-export const ItemUpdateSchema = {
+export const TodoUpdateSchema = {
     properties: {
         title: {
             anyOf: [
@@ -171,17 +181,28 @@ export const ItemUpdateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        is_completed: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Completed'
         }
     },
     type: 'object',
-    title: 'ItemUpdate'
+    title: 'TodoUpdate'
 } as const;
 
-export const ItemsPublicSchema = {
+export const TodosPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/ItemPublic'
+                '$ref': '#/components/schemas/TodoPublic'
             },
             type: 'array',
             title: 'Data'
@@ -193,7 +214,7 @@ export const ItemsPublicSchema = {
     },
     type: 'object',
     required: ['data', 'count'],
-    title: 'ItemsPublic'
+    title: 'TodosPublic'
 } as const;
 
 export const MessageSchema = {
