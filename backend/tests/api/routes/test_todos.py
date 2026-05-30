@@ -252,3 +252,54 @@ def test_delete_todo_not_enough_permissions(
     assert response.status_code == 403
     content = response.json()
     assert content["detail"] == "Not enough permissions"
+
+
+def test_read_todos_search_by_title(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    todo1 = create_random_todo(db, title="Buy groceries")
+    todo2 = create_random_todo(db, title="Fix bug in search")
+    todo3 = create_random_todo(db, title="Write documentation")
+
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=bug",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    ids = [item["id"] for item in content["data"]]
+    assert str(todo2.id) in ids
+    assert str(todo1.id) not in ids
+    assert str(todo3.id) not in ids
+
+
+def test_read_todos_search_by_description(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    todo1 = create_random_todo(db, title="Task 1", description="Important project work")
+    todo2 = create_random_todo(db, title="Task 2", description="Regular maintenance")
+
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=project",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    ids = [item["id"] for item in content["data"]]
+    assert str(todo1.id) in ids
+    assert str(todo2.id) not in ids
+
+
+def test_read_todos_search_case_insensitive(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    todo = create_random_todo(db, title="Important Task")
+
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=IMPORTANT",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    ids = [item["id"] for item in content["data"]]
+    assert str(todo.id) in ids
