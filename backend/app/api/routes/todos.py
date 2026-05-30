@@ -50,6 +50,8 @@ def read_todos(
 @router.get("/{id}", response_model=TodoPublic)
 def read_todo(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     todo = session.get(Todo, id)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
     if not current_user.is_superuser and (todo.owner_id != current_user.id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return todo
