@@ -67,6 +67,9 @@ def read_todo(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
 
 
 MAX_TODOS_PER_USER = 50
+# Note: All todos (active and completed) count toward the per-user limit.
+# This encourages users to archive or delete completed todos to maintain focus.
+# Superusers are exempt from this limit.
 
 
 @router.post("/", response_model=TodoPublic)
