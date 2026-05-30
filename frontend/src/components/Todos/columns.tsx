@@ -41,6 +41,7 @@ export const columns: ColumnDef<TodoPublic>[] = [
         <TooltipTrigger asChild>
           <span
             className={cn(
+              // Use max-w-xs, truncate, and block to prevent long titles from causing horizontal scrolling
               "font-medium max-w-xs truncate block",
               row.original.is_completed && "line-through text-muted-foreground",
             )}
