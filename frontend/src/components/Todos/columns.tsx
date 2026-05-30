@@ -12,7 +12,9 @@ function ToggleComplete({ todo }: { todo: TodoPublic }) {
   const mutation = useMutation({
     mutationFn: () => TodosService.toggleComplete({ id: todo.id }),
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["todos"] })
+      if (!todo.is_completed) {
+        queryClient.invalidateQueries({ queryKey: ["todos"] })
+      }
     },
   })
 
