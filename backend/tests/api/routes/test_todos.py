@@ -252,3 +252,83 @@ def test_delete_todo_not_enough_permissions(
     assert response.status_code == 403
     content = response.json()
     assert content["detail"] == "Not enough permissions"
+
+
+def test_read_todos_search_by_title(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    from tests.utils.todo import create_todo_for_user
+    from app.models import User
+
+    # Create a test user
+    user = User(email="testuser@example.com", hashed_password="test", is_superuser=True)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # Create todos with specific titles
+    todo1 = create_random_todo(db)
+    todo2 = create_random_todo(db)
+    todo1.title = "Buy groceries"
+    todo2.title = "Clean house"
+    db.add(todo1)
+    db.add(todo2)
+    db.commit()
+
+    # Search for "groceries"
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=groceries",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    # Should only find todo1
+    assert len(content["data"]) >= 1
+    ids = [item["id"] for item in content["data"]]
+    assert str(todo1.id) in ids
+
+
+def test_read_todos_search_by_description(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    # Create todos with specific descriptions
+    todo1 = create_random_todo(db)
+    todo2 = create_random_todo(db)
+    todo1.description = "This is important"
+    todo2.description = "This is not"
+    db.add(todo1)
+    db.add(todo2)
+    db.commit()
+
+    # Search for "important"
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=important",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    # Should find at least todo1
+    assert len(content["data"]) >= 1
+    ids = [item["id"] for item in content["data"]]
+    assert str(todo1.id) in ids
+
+
+def test_read_todos_search_no_results(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    # Create a todo
+    todo = create_random_todo(db)
+    todo.title = "Test todo"
+    db.add(todo)
+    db.commit()
+
+    # Search for something that doesn't exist
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=nonexistent",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    # Should find nothing (or at least not our todo)
+    ids = [item["id"] for item in content["data"]]
+    assert str(todo.id) not in ids
