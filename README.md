@@ -2,6 +2,8 @@
 
 A personal todo-list application built on a full-stack FastAPI + React template. Manage your todos via a clean web UI or directly through the REST API.
 
+**Live at [todo4u.ai](https://todo4u.ai)**
+
 ## Features
 
 - **Create todos** — add a title and optional description
