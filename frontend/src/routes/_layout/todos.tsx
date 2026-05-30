@@ -15,7 +15,7 @@ type FilterTab = "all" | "active" | "completed"
 
 function getTodosQueryOptions(search?: string) {
   return {
-    queryFn: () => TodosService.readTodos({ skip: 0, limit: 100, search: search || undefined }),
+    queryFn: () => TodosService.readTodos({ skip: 0, limit: 100, searchQuery: search || undefined }),
     queryKey: ["todos", { search }],
   }
 }
