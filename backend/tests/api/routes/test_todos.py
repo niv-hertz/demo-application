@@ -298,3 +298,51 @@ def test_create_todo_superuser_not_limited(
         json=data,
     )
     assert response.status_code == 200
+
+
+def test_read_todos_search(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    # Create todos with different titles and descriptions
+    todo1 = create_random_todo(db)
+    todo1.title = "Buy groceries"
+    todo1.description = "Milk, eggs, bread"
+    db.add(todo1)
+    db.commit()
+    db.refresh(todo1)
+
+    todo2 = create_random_todo(db)
+    todo2.title = "Fix bug in code"
+    todo2.description = "Search functionality not working"
+    db.add(todo2)
+    db.commit()
+    db.refresh(todo2)
+
+    # Search by title
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=groceries",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    assert len(content["data"]) == 1
+    assert content["data"][0]["id"] == str(todo1.id)
+
+    # Search by description
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=Search",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    assert len(content["data"]) == 1
+    assert content["data"][0]["id"] == str(todo2.id)
+
+    # Search with no results
+    response = client.get(
+        f"{settings.API_V1_STR}/todos/?search=nonexistent",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    assert len(content["data"]) == 0
