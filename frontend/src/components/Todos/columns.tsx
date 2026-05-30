@@ -41,7 +41,7 @@ export const columns: ColumnDef<TodoPublic>[] = [
         <TooltipTrigger asChild>
           <span
             className={cn(
-              "font-medium whitespace-nowrap",
+              "max-w-xs truncate block cursor-help font-medium",
               row.original.is_completed && "line-through text-muted-foreground",
             )}
           >
