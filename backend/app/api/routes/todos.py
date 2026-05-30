@@ -17,7 +17,7 @@ def read_todos(
     skip: int = 0,
     limit: int = 100,
     is_completed: bool | None = None,
-    search: str | None = None,
+    search_query: str | None = None,
 ) -> Any:
     if current_user.is_superuser:
         count_statement = select(func.count()).select_from(Todo)
@@ -42,10 +42,10 @@ def read_todos(
             count_statement = count_statement.where(Todo.is_completed == is_completed)
             statement = statement.where(Todo.is_completed == is_completed)
 
-    if search:
+    if search_query:
         search_filter = or_(
-            Todo.title.ilike(f"%{search}%"),
-            Todo.description.ilike(f"%{search}%"),
+            Todo.title.ilike(f"%{search_query}%"),
+            Todo.description.ilike(f"%{search_query}%"),
         )
         count_statement = count_statement.where(search_filter)
         statement = statement.where(search_filter)
