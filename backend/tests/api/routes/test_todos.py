@@ -3,8 +3,13 @@ import uuid
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from app import crud
+from app.api.routes.todos import MAX_TODOS_PER_USER
 from app.core.config import settings
+from app.models import TodoCreate
 from tests.utils.todo import create_random_todo
+from tests.utils.user import create_random_user, user_authentication_headers
+from tests.utils.utils import random_lower_string
 
 
 def test_create_todo(
@@ -264,3 +269,44 @@ def test_delete_todo_not_enough_permissions(
     assert response.status_code == 403
     content = response.json()
     assert content["detail"] == "Not enough permissions"
+
+
+def test_create_todo_exceeds_limit(client: TestClient, db: Session) -> None:
+    from app.models import UserCreate
+
+    password = random_lower_string()
+    email = f"{random_lower_string()}@example.com"
+    user = crud.create_user(
+        session=db, user_create=UserCreate(email=email, password=password)
+    )
+    headers = user_authentication_headers(
+        client=client, email=email, password=password
+    )
+
+    for _ in range(MAX_TODOS_PER_USER):
+        crud.create_todo(
+            session=db,
+            todo_in=TodoCreate(title=random_lower_string()),
+            owner_id=user.id,
+        )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/todos/",
+        headers=headers,
+        json={"title": "one too many"},
+    )
+    assert response.status_code == 400
+    assert str(MAX_TODOS_PER_USER) in response.json()["detail"]
+
+
+def test_create_todo_superuser_not_limited(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    # Superusers bypass the per-user limit; this just verifies creation still works
+    data = {"title": "Superuser todo"}
+    response = client.post(
+        f"{settings.API_V1_STR}/todos/",
+        headers=superuser_token_headers,
+        json=data,
+    )
+    assert response.status_code == 200

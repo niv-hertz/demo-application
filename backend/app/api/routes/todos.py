@@ -66,10 +66,22 @@ def read_todo(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     return todo
 
 
+MAX_TODOS_PER_USER = 50
+
+
 @router.post("/", response_model=TodoPublic)
 def create_todo(
     *, session: SessionDep, current_user: CurrentUser, todo_in: TodoCreate
 ) -> Any:
+    if not current_user.is_superuser:
+        count = session.exec(
+            select(func.count()).select_from(Todo).where(Todo.owner_id == current_user.id)
+        ).one()
+        if count >= MAX_TODOS_PER_USER:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Maximum number of todos ({MAX_TODOS_PER_USER}) reached",
+            )
     todo = Todo.model_validate(todo_in, update={"owner_id": current_user.id})
     session.add(todo)
     session.commit()
