@@ -75,7 +75,7 @@ def create_todo(
 ) -> Any:
     if not current_user.is_superuser:
         count = session.exec(
-            select(func.count()).select_from(Todo).where(Todo.owner_id == current_user.id)
+            select(func.count()).select_from(Todo).where(Todo.owner_id == current_user.id, Todo.is_completed == False)
         ).one()
         if count >= MAX_TODOS_PER_USER:
             raise HTTPException(

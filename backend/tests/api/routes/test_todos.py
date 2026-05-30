@@ -1,12 +1,12 @@
 import uuid
 
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app import crud
 from app.api.routes.todos import MAX_TODOS_PER_USER
 from app.core.config import settings
-from app.models import TodoCreate
+from app.models import Todo, TodoCreate
 from tests.utils.todo import create_random_todo
 from tests.utils.user import create_random_user, user_authentication_headers
 from tests.utils.utils import random_lower_string
@@ -310,3 +310,56 @@ def test_create_todo_superuser_not_limited(
         json=data,
     )
     assert response.status_code == 200
+
+
+def test_create_todo_completed_todos_do_not_count_toward_limit(
+    client: TestClient, db: Session
+) -> None:
+    """Test that completed todos don't count toward the per-user limit (regression test for issue #33)"""
+    from app.models import UserCreate
+
+    # Create a user
+    password = random_lower_string()
+    email = f"{random_lower_string()}@example.com"
+    user = crud.create_user(
+        session=db, user_create=UserCreate(email=email, password=password)
+    )
+    headers = user_authentication_headers(
+        client=client, email=email, password=password
+    )
+
+    # Create MAX_TODOS_PER_USER active todos
+    for _ in range(MAX_TODOS_PER_USER):
+        crud.create_todo(
+            session=db,
+            todo_in=TodoCreate(title=random_lower_string()),
+            owner_id=user.id,
+        )
+
+    # Verify that creating one more todo fails (should be at limit)
+    response = client.post(
+        f"{settings.API_V1_STR}/todos/",
+        headers=headers,
+        json={"title": "should fail"},
+    )
+    assert response.status_code == 400
+    assert str(MAX_TODOS_PER_USER) in response.json()["detail"]
+
+    # Now, complete all the todos
+    all_todos = db.exec(
+        select(Todo).where(Todo.owner_id == user.id)
+    ).all()
+    for todo in all_todos:
+        client.patch(
+            f"{settings.API_V1_STR}/todos/{todo.id}/complete",
+            headers=headers,
+        )
+
+    # Now we should be able to create a new todo because completed todos don't count
+    response = client.post(
+        f"{settings.API_V1_STR}/todos/",
+        headers=headers,
+        json={"title": "new todo after completing all"},
+    )
+    assert response.status_code == 200
+    assert response.json()["title"] == "new todo after completing all"
