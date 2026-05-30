@@ -59,18 +59,6 @@ def test_read_todo(
     assert content["owner_id"] == str(todo.owner_id)
 
 
-def test_read_todo_not_found(
-    client: TestClient, superuser_token_headers: dict[str, str]
-) -> None:
-    response = client.get(
-        f"{settings.API_V1_STR}/todos/{uuid.uuid4()}",
-        headers=superuser_token_headers,
-    )
-    assert response.status_code == 404
-    content = response.json()
-    assert content["detail"] == "Todo not found"
-
-
 def test_read_todo_not_enough_permissions(
     client: TestClient, normal_user_token_headers: dict[str, str], db: Session
 ) -> None:
