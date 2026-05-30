@@ -120,6 +120,7 @@ export type TodosReadTodosData = {
     limit?: number;
     skip?: number;
     isCompleted?: (boolean | null);
+    search?: string;
 };
 
 export type TodosReadTodosResponse = (TodosPublic);

@@ -23,7 +23,8 @@ export class TodosService {
             query: {
                 skip: data.skip,
                 limit: data.limit,
-                is_completed: data.isCompleted
+                is_completed: data.isCompleted,
+                search: data.search,
             },
             errors: {
                 422: 'Validation Error'
