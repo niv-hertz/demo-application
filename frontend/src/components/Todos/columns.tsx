@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import type { TodoPublic } from "@/client"
 import { TodosService } from "@/client"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { TodoActionsMenu } from "./TodoActionsMenu"
 
@@ -36,14 +37,19 @@ export const columns: ColumnDef<TodoPublic>[] = [
     accessorKey: "title",
     header: "Title",
     cell: ({ row }) => (
-      <span
-        className={cn(
-          "font-medium",
-          row.original.is_completed && "line-through text-muted-foreground",
-        )}
-      >
-        {row.original.title}
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={cn(
+              "font-medium max-w-xs truncate block cursor-help",
+              row.original.is_completed && "line-through text-muted-foreground",
+            )}
+          >
+            {row.original.title}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{row.original.title}</TooltipContent>
+      </Tooltip>
     ),
   },
   {
